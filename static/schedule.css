@@ -1,0 +1,235 @@
+/* schedule.css */
+body {
+    background-color: #121212;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #2563ed;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 10px;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+}
+
+.header {
+    margin-top: 80px;
+    text-align: center;
+    background: #000000;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+    margin-bottom: 40px;
+    transition: transform 0.3s ease;
+}
+
+.header:hover {
+    transform: scale(1.02);
+}
+
+.header-title {
+    color: #2563ed;
+    font-size: 2.5em;
+    margin: 0;
+}
+
+.schedule-section {
+    padding: 30px;
+    background: #000000;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    color: #fff;
+    margin-bottom: 40px;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.schedule-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.section-title {
+    color: #2563ed;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    margin-top: 30px;
+    transition: color 0.3s ease;
+}
+
+.section-title:hover {
+    color: #1e40af;
+}
+
+.section-divider {
+    border-color: #2563ed;
+    opacity: 0.5;
+    margin-bottom: 20px;
+    margin-top: 10px;
+}
+
+.goal-list {
+    color: #d6e4ff;
+    list-style-type: disc;
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.goal-list li {
+    margin-bottom: 15px;
+    transition: transform 0.2s ease;
+}
+
+.goal-list li:hover {
+    transform: translateX(10px);
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.schedule-table th,
+.schedule-table td {
+    padding: 12px;
+    border: 1px solid #2563ed;
+    text-align: left;
+}
+
+.schedule-table th {
+    background-color: #2563ed;
+}
+
+.schedule-table tr {
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333;
+    transition: background-color 0.3s ease;
+}
+
+.schedule-table tr:hover {
+    background-color: #2a2a2a;
+}
+
+.motivation-quote {
+    color: #2563ed;
+    text-align: center;
+    font-style: italic;
+    margin-top: 20px;
+    transition: opacity 0.3s ease;
+}
+
+.motivation-quote:hover {
+    opacity: 0.7;
+}
+
+/* Light Theme */
+.light-theme {
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.light-theme .header,
+.light-theme .schedule-section {
+    background-color: #fff;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.1);
+}
+
+.light-theme .section-title,
+.light-theme .motivation-quote {
+    color: #1e40af;
+}
+
+.light-theme .goal-list {
+    color: #4b5563;
+}
+
+.light-theme .schedule-table th {
+    background-color: #2563ed;
+    color: #fff;
+}
+
+.light-theme .schedule-table tr {
+    background-color: #e5e7eb;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.light-theme .schedule-table tr:hover {
+    background-color: #d1d5db;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .header {
+        margin-top: 60px;
+        padding: 20px;
+    }
+
+    .header-title {
+        font-size: 2em;
+    }
+
+    .schedule-section {
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        font-size: 1.5em;
+    }
+
+    .table-container {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-title {
+        font-size: 1.5em;
+    }
+
+    .section-title {
+        font-size: 1.2em;
+    }
+
+    .goal-list {
+        padding-left: 15px;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 6px;
+        font-size: 0.8em;
+    }
+}
+
+/* Animation Keyframes (Optional) */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

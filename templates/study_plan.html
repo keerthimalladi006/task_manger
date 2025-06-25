@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Study Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0f0f0f;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #f5f5f5;
+      animation: fadeIn 1s ease;
+    }
+
+    .container {
+      background: rgba(30, 30, 30, 0.9);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      padding: 40px 30px;
+      width: 90%;
+      max-width: 520px;
+      animation: slideUp 0.8s ease;
+    }
+
+    h1, h2 {
+      text-align: center;
+      font-weight: 600;
+      color: #f1f1f1;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      padding: 14px;
+      background: #1e1e1e;
+      border: none;
+      border-radius: 12px;
+      color: #f5f5f5;
+      font-size: 15px;
+      resize: none;
+      margin-bottom: 16px;
+      transition: 0.3s;
+      box-shadow: inset 2px 2px 5px #0a0a0a, inset -2px -2px 5px #262626;
+    }
+
+    textarea:focus {
+      outline: none;
+      box-shadow: 0 0 10px #3b82f6;
+    }
+
+    button {
+      background: linear-gradient(145deg, #3b82f6, #2563eb);
+      border: none;
+      color: white;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 500;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.3s ease, transform 0.2s ease;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(145deg, #2563eb, #1d4ed8);
+    }
+
+    .reject-btn {
+      background: linear-gradient(145deg, #ef4444, #dc2626);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+    }
+
+    .reject-btn:hover {
+      background: linear-gradient(145deg, #dc2626, #b91c1c);
+    }
+
+    .task-list {
+      margin-top: 20px;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #1e1e1e;
+      border-radius: 12px;
+      padding: 15px;
+      text-align: left;
+      box-shadow: inset 1px 1px 3px #0a0a0a, inset -1px -1px 3px #2a2a2a;
+    }
+
+    .task-list label {
+      display: block;
+      margin: 10px 0;
+      padding: 10px;
+      background: #2a2a2a;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .task-list input[type="checkbox"] {
+      appearance: none; /* Remove default checkbox styling */
+      width: 18px;
+      height: 18px;
+      margin-right: 10px;
+      border: 2px solid #3b82f6; /* Blue border */
+      border-radius: 4px;
+      cursor: pointer;
+      position: relative;
+      vertical-align: middle;
+    }
+
+    .task-list input[type="checkbox"]:checked {
+      background-color: #3b82f6; /* Blue background when checked */
+    }
+
+    .task-list input[type="checkbox"]:checked::after {
+      content: '\2713'; /* Checkmark Unicode */
+      color: white;
+      font-size: 12px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .task-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .task-list::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <h1>Create Study Plan</h1>
+    <form action="/study_plan" method="post">
+      <textarea name="user_input" placeholder="e.g., 'Study Java in 5 days'" rows="4" cols="50" required></textarea>
+      <button type="submit">Generate Plan</button>
+    </form>
+    {% if plan %}
+    <h2>Generated Study Plan</h2>
+    <form action="/confirm_study_plan" method="post">
+      <div class="task-list">
+        {% for task in plan %}
+        <label>
+          <input type="checkbox" name="tasks" value="{{ task }}" checked>
+          <span>{{ task|replace('Day : ', '') }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      <button type="submit" class="approve-btn">Approve Selected</button>
+    </form>
+    
+    <form action="/study_plan" method="get">
+      <button type="submit" class="reject-btn">Discard Plan</button>
+    </form>
+    {% endif %}
+  </div>
+</body>
+</html>

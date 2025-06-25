@@ -1,0 +1,7 @@
+Flask
+gunicorn
+requests
+python-dotenv
+Pillow
+markdown2
+Werkzeug

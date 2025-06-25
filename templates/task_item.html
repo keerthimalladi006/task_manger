@@ -1,0 +1,283 @@
+<!-- task_item.html -->
+<div class="task {{ task['priority']|lower }}-priority" id="task-{{ task['id'] }}" data-id="{{ task['id'] }}" data-priority="{{ task['priority'] }}" data-section="{{ task['section']|default('today') }}">
+    <div class="task-header">
+        <div class="priority-badge priority-{{ task['priority']|lower }}">
+            {{ task['priority'] }}
+        </div>
+        <div class="task-date">
+            <i class="far fa-clock"></i> Due: {{ task['deadline'] }}
+        </div>
+    </div>
+    <div class="task-details">
+        <h3 class="task-title" onclick="toggleFullTitle('{{ task['id'] }}')">
+            {{ task['title'] }} <i class="fas fa-expand-alt toggle-icon"></i>
+        </h3>
+        {% if task['description'] %}
+            <p class="task-description">{{ task['description'] }}</p>
+        {% endif %}
+        <hr class="task-separator">
+    </div>
+    
+    <div class="actions">
+        {% if task['status'] != 'completed' %}
+           <button class="action-btn complete" title="Complete" data-task-id="{{ task['id'] }}" onclick="completeTask('{{ task['id'] }}', this.closest('.task'))">
+                <i class="fas fa-check"></i>
+            </button>
+        {% endif %}
+        <button class="action-btn edit" title="Edit" data-task-id="{{ task['id'] }}" onclick="editTask('{{ task['id'] }}')">
+            <i class="fas fa-edit"></i>
+        </button>
+        <button class="action-btn delete" title="Delete" data-task-id="{{ task['id'] }}" onclick="deleteTask('{{ task['id'] }}', this.closest('.task'))">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </div>
+
+    <!-- Edit Form -->
+    <form class="edit-form" id="edit-form-{{ task['id'] }}" style="display: none;" onsubmit="submitEditForm(event, '{{ task['id'] }}')">
+        <div class="form-row">
+            <input type="text" name="title" value="{{ task['title'] }}" required>
+            <input type="date" name="deadline" value="{{ task['deadline'] }}" required>
+            <select name="priority" required>
+                <option value="High" {% if task['priority'] == 'High' %}selected{% endif %}>High</option>
+                <option value="Medium" {% if task['priority'] == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Low" {% if task['priority'] == 'Low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <textarea name="description">{{ task['description'] or '' }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="submit-edit">
+                <i class="fas fa-save"></i> Save
+            </button>
+            <button type="button" class="cancel-edit" onclick="toggleEdit('{{ task['id'] }}')">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
+
+<script>
+  
+   function completeTask(taskId, taskElement) {
+    fetch(`/complete/${taskId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            taskElement.classList.add('completed');
+            const completedSection = document.querySelector('.task-list[data-section="completed"]');
+            if (completedSection) {
+                completedSection.appendChild(taskElement);
+                updateTaskCounts();
+                announceToScreenReader('Task marked as complete');
+            } else {
+                // If completed section isn't on the current page, remove the task
+                taskElement.classList.add('deleting');
+                setTimeout(() => {
+                    taskElement.remove();
+                    updateTaskCounts();
+                    announceToScreenReader('Task marked as complete');
+                }, 300);
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        announceToScreenReader('Error completing task');
+    });
+}
+
+function editTask(taskId) {
+    const taskElement = document.getElementById(`task-${taskId}`);
+    const editForm = document.getElementById(`edit-form-${taskId}`);
+    const taskDetails = taskElement.querySelector('.task-details');
+    
+    if (editForm && taskDetails) {
+        const isEditing = editForm.style.display === 'block';
+        editForm.style.display = isEditing ? 'none' : 'block';
+        taskDetails.style.display = isEditing ? 'block' : 'none';
+        
+        if (!isEditing) {
+            editForm.querySelector('input[name="title"]').focus();
+        }
+        
+        announceToScreenReader(`Edit form ${isEditing ? 'closed' : 'opened'} for task ${taskId}`);
+    }
+}
+
+
+
+function toggleEdit(taskId) {
+    // This function is for canceling edits
+    const taskElement = document.getElementById(`task-${taskId}`);
+    const editForm = document.getElementById(`edit-form-${taskId}`);
+    const taskDetails = taskElement.querySelector('.task-details');
+    
+    if (editForm && taskDetails) {
+        editForm.style.display = 'none';
+        taskDetails.style.display = 'block';
+        announceToScreenReader(`Edit form closed for task ${taskId}`);
+    }
+}
+
+function submitEditForm(event, taskId) {
+    event.preventDefault();
+    const form = document.getElementById(`edit-form-${taskId}`);
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+
+    fetch(`/update/${taskId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(updatedTask => {
+        const taskElement = document.getElementById(`task-${taskId}`);
+        if (taskElement) {
+            // Update task UI elements
+            const titleHTML = `${updatedTask.task.title} <i class="fas fa-chevron-down toggle-dots"></i>`;
+            taskElement.querySelector('.task-title').innerHTML = titleHTML;
+            taskElement.querySelector('.task-date').innerHTML = `<i class="far fa-clock"></i> Due: ${updatedTask.task.deadline}`;
+            
+            // Update priority classes
+            taskElement.classList.remove('high-priority', 'medium-priority', 'low-priority');
+            taskElement.classList.add(`${updatedTask.task.priority.toLowerCase()}-priority`);
+            taskElement.setAttribute('data-priority', updatedTask.task.priority);
+            
+            // Update priority badge
+            const badge = taskElement.querySelector('.priority-badge');
+            badge.textContent = updatedTask.task.priority;
+            badge.className = `priority-badge priority-${updatedTask.task.priority.toLowerCase()}`;
+            
+            // Update description
+            const descriptionEl = taskElement.querySelector('.task-description');
+            if (updatedTask.task.description) {
+                if (!descriptionEl) {
+                    const p = document.createElement('p');
+                    p.className = 'task-description';
+                    p.textContent = updatedTask.task.description;
+                    const separator = taskElement.querySelector('.task-separator');
+                    if (separator) {
+                        taskElement.querySelector('.task-details').insertBefore(p, separator);
+                    } else {
+                        taskElement.querySelector('.task-details').appendChild(p);
+                    }
+                } else {
+                    descriptionEl.textContent = updatedTask.task.description;
+                }
+            } else if (descriptionEl) {
+                descriptionEl.remove();
+            }
+            
+            // Hide form and show details
+            const editForm = document.getElementById(`edit-form-${taskId}`);
+            const taskDetails = taskElement.querySelector('.task-details');
+            if (editForm && taskDetails) {
+                editForm.style.display = 'none';
+                taskDetails.style.display = 'block';
+            }
+            
+            announceToScreenReader(`Task ${taskId} updated`);
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        announceToScreenReader('Error updating task');
+    });
+}
+
+function deleteTask(taskId, taskElement) {
+    if (confirm("Are you sure you want to delete this task?")) {
+        fetch(`/delete/${taskId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Visual feedback before removal
+            taskElement.classList.add('deleting');
+            setTimeout(() => {
+                taskElement.remove();
+                updateTaskCounts();
+                announceToScreenReader('Task deleted');
+            }, 300);
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            announceToScreenReader('Error deleting task');
+        });
+    }
+}
+
+function updateTaskCounts() {
+    const sections = ['today', 'tomorrow', 'future', 'completed'];
+    
+    sections.forEach(section => {
+        const taskList = document.querySelector(`.task-list[data-section="${section}"]`);
+        const countElement = document.querySelector(`.${section}-section .task-count`);
+        
+        if (taskList && countElement) {
+            const taskCount = taskList.querySelectorAll('.task').length;
+            countElement.textContent = taskCount;
+            
+            // Show/hide empty state based on task count
+            const emptyState = document.querySelector(`.${section}-empty`);
+            if (emptyState) {
+                if (taskCount === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                }
+            }
+        }
+    });
+}
+function toggleFullTitle(taskId) {
+    const taskElement = document.getElementById(`task-${taskId}`);
+    const titleElement = taskElement.querySelector('.task-title');
+    const toggleIcon = titleElement.querySelector('.toggle-icon');
+    
+    if (titleElement) {
+        titleElement.classList.toggle('expanded');
+        
+        if (titleElement.classList.contains('expanded')) {
+            titleElement.style.webkitLineClamp = 'unset';
+            titleElement.style.maxHeight = 'none';
+            toggleIcon.classList.remove('fa-expand-alt');
+            toggleIcon.classList.add('fa-compress-alt');
+        } else {
+            titleElement.style.webkitLineClamp = '2';
+            titleElement.style.maxHeight = '3.2em';
+            toggleIcon.classList.remove('fa-compress-alt');
+            toggleIcon.classList.add('fa-expand-alt');
+        }
+    }
+}document.querySelectorAll('.scroll-left').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const container = e.target.closest('section').querySelector('.task-list');
+        container.scrollBy({ left: -300, behavior: 'smooth' });
+    });
+});
+
+document.querySelectorAll('.scroll-right').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const container = e.target.closest('section').querySelector('.task-list');
+        container.scrollBy({ left: 300, behavior: 'smooth' });
+    });
+});
+</script>

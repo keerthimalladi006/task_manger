@@ -1,0 +1,192 @@
+{% extends "base_nav.html" %}
+
+{% block title %}Completed Tasks{% endblock %}
+
+{% block styles %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0a0a0a;
+        color: #e0e0e0;
+        
+    }
+    
+    .task-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 3rem;
+    }
+    
+    .page-header {
+        margin-bottom: 3rem;
+    }
+    
+    .page-header h1 {
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 0.5rem;
+        font-size: 2.2rem;
+    }
+    
+    .page-header p {
+        color: #7a7a7a;
+        font-size: 1.1rem;
+    }
+    
+    .task-card {
+        background-color: #0a0a0a;
+        border: 1px solid #1e1e1e;
+        border-left: 10px solid #1a4dbb;
+        margin-bottom: 2rem;
+        padding: 2.5rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        animation: cardEntry 0.5s ease-out forwards;
+    }
+    
+    .task-card:hover {
+        border-left-color: #3b82f6;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        transform: translateY(-3px);
+        animation: borderPulse 2s infinite;
+    }
+
+    @keyframes borderPulse {
+        0% { border-left-color: #1a4dbb; }
+        50% { border-left-color: #3b82f6; }
+        100% { border-left-color: #1a4dbb; }
+    }
+
+    @keyframes cardEntry {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-title {
+        font-weight: 500;
+        color: #ffffff;
+        margin-bottom: 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.3rem;
+    }
+
+    .task-meta {
+        display: flex;
+        gap: 1.8rem;
+        color: #7a7a7a;
+        font-size: 1rem;
+        margin-bottom: 1.8rem;
+    }
+
+    .task-meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .task-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-reopen {
+        background: transparent;
+        color: #7a7a7a;
+        border: 2px solid #1e1e1e;
+        padding: 0.8rem 1.8rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .btn-reopen:hover {
+        color: #3b82f6;
+        border-color: #2563eb;
+        transform: translateX(5px);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        border: 2px dashed #1e1e1e;
+        border-left: 10px solid #1a4dbb;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: #1e1e1e;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: flex-end;
+        height: 200px;
+        margin-top: 20px;
+    }
+
+    .chart-bar {
+        width: 100px;
+        text-align: center;
+    }
+
+    .bar {
+        background-color: #1e5eff;
+        width: 100%;
+        transition: height 0.5s ease;
+        border-radius: 5px 5px 0 0;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+<div class="task-container">
+    <div class="page-header">
+        <h1>Completed Tasks</h1>
+        <p>Your accomplished work</p>
+    </div>
+
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-card">
+            <div class="task-title">
+                <span>{{ task.title or "Untitled Task" }}</span>
+                {% if task.deadline %}
+                <span style="color: #7a7a7a; font-weight: 400;">{{ task.deadline }}</span>
+                {% endif %}
+            </div>
+            
+            <div class="task-meta">
+                <span><i class="fas fa-bolt" style="color: #3b82f6;"></i> {{ task.priority }}</span>
+                <span><i class="fas fa-check" style="color: #3b82f6;"></i> Completed</span>
+            </div>
+            
+            <div class="task-actions">
+                <a href="{{ url_for('update_status', task_id=task.id, new_status='todo') }}" 
+                   class="btn-reopen">
+                    <i class="fas fa-undo"></i> Reopen
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="task-card empty-state">
+            <i class="far fa-check-circle"></i>
+            <p>No tasks completed yet</p>
+        </div>
+    {% endif %}
+</div>
+
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+{% endblock %}

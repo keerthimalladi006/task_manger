@@ -1,0 +1,301 @@
+{% extends "base_nav.html" %}
+
+{% block title %}Deleted and Overdue Tasks - Taskly Pro{% endblock %}
+
+{% block content %}
+<div class="header" style="margin-top: 80px; text-align: center; color: #fff; background: #000000; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);">
+    <h1><i class="fas fa-trash" style="color: #2563ed;"></i> Deleted and Overdue Tasks</h1>
+</div>
+
+<!-- Deleted Tasks Section -->
+<section aria-labelledby="deleted-tasks-heading" style="margin-top: 40px; padding: 20px; background: #000000; border-radius: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+        <h2 id="deleted-tasks-heading" style="color: #fff; font-size: 24px;">
+            <i class="fas fa-trash-alt" style="color: #2563ed;"></i> Recently Deleted
+            <span class="task-count" style="color: #2563ed; font-weight: bold;">{{ deleted_tasks|length }}</span>
+        </h2>
+        <div class="section-actions">
+            <button class="section-action-btn" onclick="emptyTrash()" title="Empty Trash" aria-label="Empty Trash" style="background: #2563ed; border: none; padding: 8px; color: #fff; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; width: 40px; height: 40px;">
+                <i class="fas fa-broom"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="task-list" id="deleted-tasks" style="margin-top: 20px; display: grid; gap: 15px;">
+        {% if deleted_tasks %}
+            {% for task in deleted_tasks %}
+                <div class="task deleted-task" id="task-{{ task['id'] }}" style="background: #1a1a1a; padding: 15px; border-radius: 15px; border-left: 4px solid #2563ed;">
+                    <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; color: #d6e4ff;">
+                        <div class="priority-badge priority-{{ task['priority'] | lower }}" style="padding: 5px 10px; border-radius: 15px; font-size: 12px;">
+                            {{ task['priority'] | upper }}
+                        </div>
+                        <div class="task-date" style="font-size: 14px;">
+                            <i class="far fa-clock" style="color: #2563ed;"></i> Due: {{ task['deadline'] }}
+                        </div>
+                    </div>
+                    <div class="task-details" style="margin-top: 10px;">
+                        <h3 class="task-title" style="color: #fff; font-size: 18px;">{{ task['title'] }}</h3>
+                        {% if task['description'] %}
+                            <p class="task-description" style="color: #b0b0b0; font-size: 14px;">{{ task['description'] }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button onclick="restoreTask({{ task['id'] }})" class="action-btn restore" title="Restore" aria-label="Restore task" style="background: #00C853; border: none; padding: 8px; color: #fff; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; width: 40px; height: 40px;">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button onclick="permanentlyDeleteTask({{ task['id'] }})" class="action-btn delete" title="Delete Permanently" aria-label="Delete task permanently" style="background: #FF1744; border: none; padding: 8px; color: #fff; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; width: 40px; height: 40px;">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="text-align: center; color: #b0b0b0; padding: 20px; background: #1a1a1a; border-radius: 15px;">
+                <i class="fas fa-trash-alt" style="color: #2563ed; font-size: 40px;"></i>
+                <h3 style="font-size: 20px;">Trash is empty</h3>
+                <p style="font-size: 14px;">Deleted tasks will appear here</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Overdue Tasks Section -->
+<section aria-labelledby="overdue-tasks-heading" style="margin-top: 40px; padding: 20px; background: #000000; border-radius: 15px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px;">
+        <h2 id="overdue-tasks-heading" style="color: #fff; font-size: 24px;">
+            <i class="fas fa-exclamation-triangle" style="color: #2563ed;"></i> Overdue Tasks
+            <span class="task-count" style="color: #2563ed; font-weight: bold;">{{ overdue_tasks|length }}</span>
+        </h2>
+    </div>
+
+    <div class="task-list" id="overdue-tasks" style="margin-top: 20px; display: grid; gap: 15px;">
+        {% if overdue_tasks %}
+            {% for task in overdue_tasks %}
+                <div class="task overdue-task" id="task-{{ task['id'] }}" style="background: #1a1a1a; padding: 15px; border-radius: 15px; border-left: 4px solid #2563ed;">
+                    <div class="task-header" style="display: flex; justify-content: space-between; align-items: center; color: #d6e4ff;">
+                        <div class="priority-badge priority-{{ task['priority'] | lower }}" style="padding: 5px 10px; border-radius: 15px; font-size: 12px;">
+                            {{ task['priority'] | upper }}
+                        </div>
+                        <div class="task-date" style="font-size: 14px;">
+                            <i class="far fa-clock" style="color: #2563ed;"></i> Due: {{ task['deadline'] }}
+                        </div>
+                    </div>
+                    <div class="task-details" style="margin-top: 10px;">
+                        <h3 class="task-title" style="color: #fff; font-size: 18px;">{{ task['title'] }}</h3>
+                        {% if task['description'] %}
+                            <p class="task-description" style="color: #b0b0b0; font-size: 14px;">{{ task['description'] }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button onclick="startTask({{ task['id'] }})" class="action-btn start" title="Start Task" aria-label="Start task" style="background: #2563ed; border: none; padding: 8px; color: #fff; border-radius: 50%; cursor: pointer; transition: transform 0.3s ease; width: 40px; height: 40px;">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" style="text-align: center; color: #b0b0b0; padding: 20px; background: #1a1a1a; border-radius: 15px;">
+                <i class="fas fa-exclamation-triangle" style="color: #2563ed; font-size: 40px;"></i>
+                <h3 style="font-size: 20px;">No overdue tasks</h3>
+                <p style="font-size: 14px;">Tasks past their deadline will appear here</p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    // Restore task function
+    function restoreTask(taskId) {
+        fetch(`/restore/${taskId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === "Task restored successfully") {
+                    const taskElement = document.getElementById(`task-${taskId}`);
+                    taskElement.style.opacity = '0';
+                    setTimeout(() => {
+                        taskElement.remove();
+                        announceToScreenReader('Task restored successfully');
+                        updateTaskCounts();
+                    }, 300);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                announceToScreenReader('Error restoring task');
+            });
+    }
+
+    // Permanently delete task
+    function permanentlyDeleteTask(taskId) {
+        if (confirm("Are you sure you want to permanently delete this task? This cannot be undone.")) {
+            fetch(`/permanent-delete/${taskId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === "Task deleted permanently") {
+                        const taskElement = document.getElementById(`task-${taskId}`);
+                        taskElement.style.opacity = '0';
+                        setTimeout(() => {
+                            taskElement.remove();
+                            announceToScreenReader('Task permanently deleted');
+                            updateTaskCounts();
+                        }, 300);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    announceToScreenReader('Error deleting task');
+                });
+        }
+    }
+
+    // Empty trash
+    function emptyTrash() {
+        if (confirm("Are you sure you want to empty the trash? All deleted tasks will be permanently removed.")) {
+            fetch('/empty-trash', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message === "Trash emptied") {
+                        document.querySelectorAll('.deleted-task').forEach(task => {
+                            task.style.opacity = '0';
+                            setTimeout(() => task.remove(), 300);
+                        });
+                        announceToScreenReader('Trash has been emptied');
+                        updateTaskCounts();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    announceToScreenReader('Error emptying trash');
+                });
+        }
+    }
+
+    // Start overdue task
+    function startTask(taskId) {
+        fetch(`/start_task/${taskId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const taskElement = document.getElementById(`task-${taskId}`);
+                    taskElement.style.opacity = '0';
+                    setTimeout(() => {
+                        taskElement.remove();
+                        announceToScreenReader('Task moved to in-progress');
+                    }, 300);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                announceToScreenReader('Error starting task');
+            });
+    }
+
+    // Placeholder for screen reader announcements
+    function announceToScreenReader(message) {
+        console.log(message); // Replace with actual screen reader implementation if needed
+    }
+
+    // Placeholder for updating task counts
+    function updateTaskCounts() {
+        console.log("Task counts updated"); // Implement if needed
+    }
+</script>
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* Remove animation for showing tasks */
+    .task-list .task {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    /* Priority Badge Animations */
+    @keyframes pulseHigh {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.5); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 5px rgba(244, 67, 54, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    }
+    @keyframes pulseMedium {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.5); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 5px rgba(255, 193, 7, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    @keyframes pulseLow {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 5px rgba(76, 175, 80, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+
+    .priority-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 10px;
+        border-radius: 15px;
+        color: #fff;
+        animation: none; /* Default no animation */
+    }
+    .priority-high {
+        background-color: #F44336;
+        animation: pulseHigh 2s infinite;
+    }
+    .priority-medium {
+        background-color: #FFC107;
+        animation: pulseMedium 2s infinite;
+    }
+    .priority-low {
+        background-color: #4CAF50;
+        animation: pulseLow 2s infinite;
+    }
+
+    /* Fade out animation for task removal */
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    .action-btn:hover, .section-action-btn:hover {
+        transform: scale(1.05);
+    }
+    .section-action-btn:hover {
+        background: #1e4db9; /* Darker shade of #2563ed for hover */
+    }
+   
+    section {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .task-list {
+    margin-top: 20px;
+    display: grid;
+    gap: 15px;
+    /* Ensure tasks are side by side with a minimum width and auto-fitting columns */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    /* Optional: Add padding or margin to the container if needed */
+    padding: 0 20px;
+}
+
+/* Ensure each task takes up its own grid cell and aligns properly */
+.task {
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 15px;
+    border-left: 4px solid #2563ed;
+    width: 100%; /* Ensures the task fits within its grid cell */
+    box-sizing: border-box; /* Includes padding in the width calculation */
+}
+
+/* Optional: Add media query to adjust layout on smaller screens */
+@media (max-width: 768px) {
+    .task-list {
+        grid-template-columns: 1fr; /* Stack tasks vertically on small screens */
+    }
+}
+</style>
+{% endblock %}
+{% endblock %}

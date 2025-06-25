@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-primary-blue-light">Leaderboard</h1>
+    <div class="card mt-4">
+        <table class="w-full text-sm text-muted">
+            <tr><th>Rank</th><th>Username</th><th>Streak</th><th>Completed Tasks</th></tr>
+            {% for i, user in enumerate(leaderboard, 1) %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.streak }} days</td>
+                <td>{{ user.completed_tasks }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-center">No team members</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+    <p class="mt-4"><a href="{{ url_for('team') }}" class="text-primary-blue-light hover:text-primary-blue">Back to Team</a></p>
+</div>
+{% endblock %}

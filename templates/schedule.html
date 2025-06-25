@@ -1,0 +1,194 @@
+{% extends "base_nav.html" %}
+
+{% block content %}
+<!-- Tailwind CSS CDN -->
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<!-- Background Wrapper -->
+<div class="bg-black bg-cover bg-center min-h-screen" style="background-image: url({{ url_for('static', filename='one.jpg') }});">
+
+    <!-- Header -->
+    <div class="py-10 text-center text-white backdrop-blur-sm bg-black/70 shadow-md">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-blue-600 mb-4 animate-fade-in">Your Optimized Schedule</h1>
+        <p class="text-xl text-gray-200 animate-fade-in delay-200">Stay on track with your personalized plan</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-3 text-white space-y-8">
+
+        {% if not schedule %}
+        <div class="bg-red-600/70 text-white p-2 rounded-md animate-fade-in">
+            <p class="font-semibold">No schedule generated. Please add tasks to create your schedule.</p>
+        </div>
+        {% endif %}
+
+        <!-- Goal Setting -->
+        <div class="backdrop-blur-md bg-black/50 rounded-lg shadow-lg p-6 animate-slide-up">
+            <h2 class="text-2xl font-semibold text-blue-500 mb-3">1. Goal Setting</h2>
+            {% if schedule and schedule.weekly_review %}
+            <ul class="space-y-2">
+                <li>
+                    <span class="font-bold">Went Well:</span>
+                    {{ schedule.weekly_review.went_well | default('N/A') }}
+                </li>
+                <li>
+                    <span class="font-bold">To Improve:</span>
+                    <ul class="list-disc list-inside ml-4">
+                        {% for item in schedule.weekly_review.to_improve %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li>N/A</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li>
+                    <span class="font-bold">Next Focus:</span>
+                    <ul class="list-disc list-inside ml-4">
+                        {% for item in schedule.weekly_review.next_focus %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li>N/A</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+            {% else %}
+            <p class="text-gray-300">No weekly review available.</p>
+            {% endif %}
+        </div>
+
+        <!-- Daily Study Schedule -->
+        <div class="backdrop-blur-md bg-black/50 rounded-lg shadow-lg p-6 animate-slide-up">
+            <h2 class="text-2xl font-semibold text-blue-500 mb-4">2. Daily Study Schedule</h2>
+            {% if schedule and schedule.daily_schedule %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for slot in schedule.daily_schedule %}
+                <div class="bg-gray-800 p-4 rounded-md hover:shadow-lg transition-transform transform hover:scale-105">
+                    <h3 class="text-lg font-medium text-yellow-400">{{ slot.time | default("N/A") }}</h3>
+                    <p>{{ slot.activity | default("N/A") }}</p>
+                    <p class="text-sm italic text-gray-300">{{ slot.notes | default("N/A") }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-gray-300">No schedule items available.</p>
+            {% endif %}
+        </div>
+
+        <!-- Weekly Review -->
+        <div class="backdrop-blur-md bg-black/50 rounded-lg shadow-lg p-6 animate-slide-up">
+            <h2 class="text-2xl font-semibold text-blue-500 mb-4">3. Weekly Review</h2>
+            {% if schedule and schedule.weekly_review %}
+            <ul class="space-y-2">
+                <li>
+                    <span class="font-bold">Went Well:</span>
+                    {{ schedule.weekly_review.went_well | default('N/A') }}
+                </li>
+                <li>
+                    <span class="font-bold">To Improve:</span>
+                    <ul class="list-disc list-inside ml-4">
+                        {% for item in schedule.weekly_review.to_improve %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li>N/A</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                <li>
+                    <span class="font-bold">Next Focus:</span>
+                    <ul class="list-disc list-inside ml-4">
+                        {% for item in schedule.weekly_review.next_focus %}
+                        <li>{{ item }}</li>
+                        {% else %}
+                        <li>N/A</li>
+                        {% endfor %}
+                    </ul>
+                </li>
+            </ul>
+            {% else %}
+            <p class="text-gray-300">No weekly review available.</p>
+            {% endif %}
+        </div>
+
+        <!-- Progress Tracker -->
+        <div class="backdrop-blur-md bg-black/50 rounded-lg shadow-lg p-6 animate-slide-up">
+            <h2 class="text-2xl font-semibold text-blue-500 mb-4">4. Progress Tracker</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full table-auto text-left">
+                    <thead class="bg-blue-600 text-white">
+                        <tr>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Topic/Task</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300">
+                        {% for entry in schedule.progress_tracker %}
+                        <tr class="border-b border-gray-700">
+                            <td class="p-3">{{ entry.date | default('N/A') }}</td>
+                            <td class="p-3">{{ entry.topic | default('N/A') }}</td>
+                            <td class="p-3">
+                                {% if entry.status %}
+                                <span class="text-green-400"><i class="fas fa-check-circle"></i></span>
+                                {% else %}
+                                <span class="text-red-400"><i class="fas fa-times-circle"></i></span>
+                                {% endif %}
+                            </td>
+                            <td class="p-3">{{ entry.notes | default('N/A') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="p-3 text-center text-gray-400 italic">
+                                <i class="fas fa-info-circle"></i> Tracking starts today!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Resources -->
+        <div class="backdrop-blur-md bg-black/50 rounded-lg shadow-lg p-6 animate-slide-up">
+            <h2 class="text-2xl font-semibold text-blue-500 mb-4">5. Resources/Tools</h2>
+            {% if schedule and schedule.resources %}
+            <ul class="space-y-2">
+                <li><span class="font-bold">Books:</span> {{ schedule.resources.books | default('N/A') }}</li>
+                <li><span class="font-bold">Apps/Websites:</span> {{ schedule.resources.apps | default('N/A') }}</li>
+                <li><span class="font-bold">Other Materials:</span> {{ schedule.resources.materials | default('N/A') }}</li>
+            </ul>
+            {% else %}
+            <p class="text-gray-300">No resources listed.</p>
+            {% endif %}
+        </div>
+
+        <!-- Quote -->
+        <div class="text-center mt-10 animate-fade-in">
+            <blockquote class="text-2xl italic text-blue-400">
+                "Stay focused. Every small step compounds into greatness."
+            </blockquote>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Animations -->
+<style>
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 1s ease forwards;
+}
+.animate-slide-up {
+    animation: slideUp 0.8s ease forwards;
+}
+</style>
+{% endblock %}

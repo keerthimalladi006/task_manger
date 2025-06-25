@@ -1,0 +1,354 @@
+
+{% extends "base.html" %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='schedule.css') }}">
+{% block styles %}
+{{ super() }}
+<style>
+    .main-nav {
+        position: fixed;
+        top: 0;
+        left: 250px;
+        right: 0;
+        height: 60px;
+        background-color: var(--dark-gray);
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        
+    }
+    
+    .nav-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        padding: 0 20px;
+    }
+    
+    .nav-brand a {
+        color: var(--text-white);
+        font-size: 1.2rem;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    
+    .nav-search {
+        position: relative;
+        width: 40%;
+    }
+    
+    .nav-search i {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-light);
+    }
+    
+    .nav-search input {
+        width: 100%;
+        padding: 8px 10px 8px 35px;
+        border-radius: 20px;
+        border: none;
+        background-color: var(--light-gray);
+        color: var(--text-white);
+    }
+    
+    .user-dropdown {
+        position: relative;
+    }
+    
+    .user-btn {
+        background: none;
+        border: none;
+        color: var(--text-white);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+    
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .dropdown-menu {
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background-color: var(--dark-gray);
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        display: none;
+        min-width: 200px;
+        z-index: 1001;
+    }
+    
+    .dropdown-menu.show {
+        display: block;
+    }
+    
+    .dropdown-menu a {
+        display: block;
+        padding: 10px 15px;
+        color: var(--text-white);
+        text-decoration: none;
+    }
+    
+    .dropdown-menu a:hover {
+        background-color: var(--light-gray);
+    }
+    
+    .auth-links a {
+        color: var(--text-white);
+        text-decoration: none;
+        margin-left: 15px;
+    }
+    
+    .auth-links a:hover {
+        text-decoration: underline;
+    }
+    
+
+</style>
+{% endblock %}
+
+{% block nav %}
+<nav class="main-nav" style="
+    position: fixed;
+    top: 0;
+    left: 280px; /* Match sidebar width */
+    right: 0;
+    height: 60px;
+    background-color: #1a1a1a;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding-right: 20px;
+    border-bottom: 2px solid #2563ed;
+">
+    <!-- Rest of your navbar content -->
+
+    <div class="nav-container" style="display: flex; justify-content: flex-end; width: 100%; padding-right: 20px;">
+        <div class="nav-actions">
+            <div class="nav-user" style="display: flex; align-items: center;">
+                {% if 'user_id' in session %}
+                <div class="user-dropdown" style="position: relative;">
+                    <button class="user-btn" style="display: flex; align-items: center; gap: 10px; background: none; border: none; cursor: pointer; color: #d6e4ff; transition: all 0.3s ease; padding: 5px 10px;">
+                        <span style="
+                            font-family: 'Poppins', sans-serif;
+                            font-size: 16px;
+                            font-weight: 500;
+                            padding: 6px 12px;
+                            border-radius: 8px;
+                         
+                            color: #fff;
+                            text-shadow: 0 0 4px rgba(37, 99, 237, 0.5);
+                            cursor: default;
+                            transition: all 0.3s ease;"
+                            onmouseover="this.style.background='linear-gradient(45deg, #1e4db9, #1a1a1a)'; this.style.color='#e0eaff'; this.style.transform='scale(1.05)';"
+                            onmouseout="this.style.background='linear-gradient(45deg, #2563ed, #1a1a1a)'; this.style.color='#fff'; this.style.transform='scale(1)';">
+                            {{ session['username'] }}
+                        </span>
+                        <img src="https://ui-avatars.com/api/?name={{ session['username'] | urlencode }}&background=2563ed&color=fff&rounded=true&size=64" 
+                             alt="User Avatar" 
+                             style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #2563ed; transition: transform 0.3s ease; box-shadow: 0 0 8px rgba(37, 99, 237, 0.3);"
+                             onmouseover="this.style.transform='scale(1.1) rotate(5deg)';"
+                             onmouseout="this.style.transform='scale(1) rotate(0deg)';">
+                        <div class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background-color: #2d2d2d; border-radius: 8px; min-width: 200px; z-index: 1001; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); animation: slideDown 0.3s ease;">
+                           
+                            <a href="{{ url_for('profile') }}"
+   class="dropdown-item profile-item"
+   style="display: flex; align-items: center; gap: 10px; padding: 12px 15px; color: #fff; text-decoration: none; transition: all 0.3s ease;"
+   onclick="event.preventDefault(); document.getElementById('profile-form').submit();">
+   <i class="fas fa-user" style="color: #2563eb;"></i> Profile
+</a>
+
+<form id="profile-form" action="{{ url_for('profile') }}" method="POST" style="display: none;"></form>
+
+
+                            
+      <a href="{{ url_for('logout') }}" 
+   class="dropdown-item logout-item" 
+   style="display: block; padding: 12px 15px; color: #fff; text-decoration: none; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px;"
+   onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+    <i class="fas fa-sign-out-alt" style="color: #2563ed;"></i> Logout
+</a>
+
+</form>
+                       
+<!-- Add this hidden form for more reliable logout -->
+<form id="logout-form" action="{{ url_for('logout') }}" method="POST" style="display: none;">
+    <input type="hidden" name="_method" value="POST">
+</form>
+                        </div>
+                    </button>
+                </div>
+                {% else %}
+                <div class="auth-links" style="display: flex; gap: 15px;">
+                    <a href="{{ url_for('login') }}" class="nav-login" style="color: #2563ed; text-decoration: none; font-weight: bold; padding: 8px 15px; border: 1px solid #2561ed; border-radius: 5px; transition: all 0.3s ease; background: #1a1a1a; box-shadow: 0 2px 4px rgba(37, 99, 237, 0.2);">
+                        Login
+                    </a>
+                    <a href="{{ url_for('register') }}" class="nav-register" style="color: #fff; text-decoration: none; font-weight: bold; padding: 8px 15px; background: #2563ed; border-radius: 5px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(37, 99, 237, 0.3);">
+                        Register
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userBtn = document.querySelector('.user-btn');
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+
+        if (userBtn && dropdownMenu) {
+            userBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isVisible = dropdownMenu.style.display === 'block';
+                dropdownMenu.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible) {
+                    dropdownMenu.style.animation = 'slideDown 0.3s ease';
+                } else {
+                    dropdownMenu.style.animation = 'slideUp 0.3s ease';
+                }
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!userBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+
+            // Add hover effects to dropdown items
+            const dropdownItems = document.querySelectorAll('.dropdown-item');
+            dropdownItems.forEach(item => {
+                item.addEventListener('mouseover', function() {
+                    this.style.background = 'linear-gradient(45deg, #2563ed, #1e4db9)';
+                    this.style.color = '#fff';
+                    this.style.transform = 'translateX(5px)';
+                });
+                item.addEventListener('mouseout', function() {
+                    this.style.background = 'transparent';
+                    this.style.color = '#fff';
+                    this.style.transform = 'translateX(0)';
+                });
+            });
+
+            // Login/Register hover effects
+            const loginLink = document.querySelector('.nav-login');
+            const registerLink = document.querySelector('.nav-register');
+            if (loginLink) {
+                loginLink.addEventListener('mouseover', function() {
+                    this.style.background = '#2563ed';
+                    this.style.color = '#fff';
+                });
+                loginLink.addEventListener('mouseout', function() {
+                    this.style.background = '#1a1a1a';
+                    this.style.color = '#2563ed';
+                });
+            }
+            if (registerLink) {
+                registerLink.addEventListener('mouseover', function() {
+                    this.style.background = '#1e4db9';
+                });
+                registerLink.addEventListener('mouseout', function() {
+                    this.style.background = '#2563ed';
+                });
+            }
+        }
+    });
+
+    // Animation keyframes
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+    `;
+    document.head.appendChild(styleSheet);
+    // Add this to your base template or a separate JS file
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle logout clicks
+    document.querySelectorAll('.logout-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch("{{ url_for('logout') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+            })
+            .catch(error => {
+                console.error('Logout error:', error);
+                window.location.href = "{{ url_for('logout') }}";
+            });
+        });
+    });
+});
+</script>
+<style>
+    .dropdown-item {
+        position: relative;
+        overflow: hidden;
+    }
+    .dropdown-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(37, 99, 237, 0.2);
+        transition: all 0.3s ease;
+        z-index: -1;
+    }
+    .dropdown-item:hover::before {
+        left: 0;
+    }
+    .profile-item:hover {
+        background: #2563ed !important;
+        color: #fff !important;
+    }
+    .settings-item:hover {
+        background: #1e4db9 !important;
+        color: #fff !important;
+    }
+    .logout-item:hover {
+        background: #dc3545 !important;
+        color: #fff !important;
+    }
+    .nav-login, .nav-register {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .nav-login:hover, .nav-register:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}

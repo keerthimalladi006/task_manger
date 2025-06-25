@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Taskly Pro - Premium Task Manager{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='five.css') }}">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to Content Link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- High Contrast Toggle -->
+    <button id="contrast-toggle" class="contrast-toggle" onclick="toggleContrast()" aria-label="Toggle high contrast mode" aria-pressed="false">
+        <i class="fas fa-adjust"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div>
+            <div class="logo">
+                <span>Taskly Pro</span>
+                <div class="logo-pulse"></div>
+            </div>
+            <a href="/tasks" class="{% if request.path == '/' %}active{% endif %}"><i class="fas fa-tachometer-alt"></i><span>Dashboard</span></a>
+            <a href="/" class="{% if request.path == '/tasks' %}active{% endif %}"><i class="fas fa-tasks"></i><span>Tasks</span></a>
+            <a href="/completedo" class="{% if request.path == '/completedo' %}active{% endif %}"><i class="fas fa-check-circle"></i><span>Completed</span></a>
+            <a href="/inprogress" class="{% if request.path == '/inprogress' %}active{% endif %}"><i class="fas fa-spinner"></i><span>In Progress</span></a>
+            <a href="/todo" class="{% if request.path == '/todo' %}active{% endif %}"><i class="fas fa-clipboard-list"></i><span>To Do</span></a>
+            <a href="/team" class="{% if request.path == '/team' %}active{% endif %}"><i class="fas fa-users"></i><span>Team</span></a>
+            <a href="/deleted" class="{% if request.path == '/deleted' %}active{% endif %}"><i class="fas fa-trash"></i><span>Trash</span></a>
+            <a href="/study_plan" class="{% if request.path == '/study_plan' %}active{% endif %}"><i class="fas fa-book"></i><span>Study Plan</span></a>
+            <a href="/schedule" class="{% if request.path == '/schedule' %}active{% endif %}"><i class="fas fa-calendar-alt"></i><span>Schedule</span></a>
+        </div>
+        <a href="#" class="settings-btn"><i class="fas fa-cog"></i><span>Settings</span></a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+        {% block nav %}{% endblock %}
+        {% block content %}{% endblock %}
+        
+        
+        
+
+    </div>
+
+    <!-- ARIA Live Region for Accessibility Notifications -->
+    <div id="aria-live-region" aria-live="polite" aria-atomic="true" class="screen-reader-only"></div>
+
+    <script>
+        // Common JavaScript functions
+        function toggleContrast() {
+            document.body.classList.toggle('high-contrast');
+            const contrastToggle = document.getElementById('contrast-toggle');
+            const isHighContrast = document.body.classList.contains('high-contrast');
+            contrastToggle.setAttribute('aria-pressed', isHighContrast);
+            
+            const message = isHighContrast ? 
+                'High contrast mode enabled' : 
+                'High contrast mode disabled';
+            announceToScreenReader(message);
+            localStorage.setItem('highContrast', isHighContrast);
+        }
+
+        function announceToScreenReader(message) {
+            const liveRegion = document.getElementById('aria-live-region');
+            liveRegion.textContent = message;
+            setTimeout(() => {
+                liveRegion.textContent = '';
+            }, 3000);
+        }
+
+        // Initialize high contrast mode from localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('highContrast') === 'true') {
+                document.body.classList.add('high-contrast');
+                document.getElementById('contrast-toggle').setAttribute('aria-pressed', 'true');
+            }
+
+            // Animate sidebar items
+            const sidebarLinks = document.querySelectorAll('.sidebar a');
+            sidebarLinks.forEach((link, index) => {
+                setTimeout(() => {
+                    link.style.opacity = '1';
+                    link.style.transform = 'translateX(0)';
+                }, 100 * index);
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
