@@ -27,42 +27,24 @@ Built by students, for students — Taskly Pro simplifies your academic workload
 
 ## Project Structure
 
-taskmanager/
-├── static/
-│ └── css/
-│ ├── five.css
-│ ├── schedule.css
-│ └── tailwind.config.js
-│
-├── templates/
-│ ├── base.html
-│ ├── base_auth.html
-│ ├── base_nav.html
-│ ├── index.html
-│ ├── login.html
-│ ├── register.html
-│ ├── profile.html
-│ ├── tasks.html
-│ ├── task_item.html
-│ ├── completed.html
-│ ├── deleted.html
-│ ├── inprogress.html
-│ ├── schedule.html
-│ ├── study_plan.html
-│ ├── leaderboard.html
-│ ├── teams.html
-│ └── todo.html
-│
-├── index.py # Main Flask entry point
-├── schedule.py # Task scheduling logic
-├── study_plan.py # AI planner logic
-├── utils.py # Utility/helper functions
-├── streak.json # Streak data
-├── .env # Cohere API key (not committed)
-├── .gitignore
-├── LICENSE
-├── README.md
-└── requirements.txt
+## 🌐 Routes Overview
+
+| Route              | Method | Description                         | Template          |
+|-------------------|--------|-------------------------------------|-------------------|
+| `/`               | GET    | Home page                           | `index.html`      |
+| `/login`          | GET/POST | Login page                        | `login.html`      |
+| `/register`       | GET/POST | User registration                  | `register.html`   |
+| `/profile`        | GET/POST | User profile info/edit             | `profile.html`    |
+| `/tasks`          | GET    | View all tasks                      | `tasks.html`      |
+| `/completed`      | GET    | Completed tasks                     | `completed.html`  |
+| `/deleted`        | GET    | Deleted tasks                       | `deleted.html`    |
+| `/inprogress`     | GET    | In-progress tasks                   | `inprogress.html` |
+| `/schedule`       | GET/POST | Task schedule (Pomodoro etc.)     | `schedule.html`   |
+| `/study-plan`     | GET/POST | AI-generated study plans          | `study_plan.html` |
+| `/leaderboard`    | GET    | View user leaderboard               | `leaderboard.html`|
+| `/teams`          | GET/POST | Manage or join teams              | `teams.html`      |
+| `/todo`           | GET/POST | Main to-do app                    | `todo.html`       |
+
 
 
 ## How to Run the Project
