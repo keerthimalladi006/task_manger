@@ -41,7 +41,6 @@ Built by students, for students — Taskly Pro simplifies your academic workload
 | `/inprogress`     | GET    | In-progress tasks                   | `inprogress.html` |
 | `/schedule`       | GET/POST | Task schedule (Pomodoro etc.)     | `schedule.html`   |
 | `/study-plan`     | GET/POST | AI-generated study plans          | `study_plan.html` |
-| `/leaderboard`    | GET    | View user leaderboard               | `leaderboard.html`|
 | `/teams`          | GET/POST | Manage or join teams              | `teams.html`      |
 | `/todo`           | GET/POST | Main to-do app                    | `todo.html`       |
 
