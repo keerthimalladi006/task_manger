@@ -86,15 +86,17 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
+
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            skills TEXT
-        )
-    ''')
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        skills TEXT,
+        streak INTEGER DEFAULT 0
+    )
+''')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS teams (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,35 +120,37 @@ def init_db():
     ''')
 
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            user_id INTEGER NOT NULL,
-            team_id INTEGER,
-            deadline TEXT,
-            priority TEXT,
-            status TEXT DEFAULT 'pending',
-            progress INTEGER DEFAULT 0,
-            visibility TEXT DEFAULT 'team',
-            checklist TEXT,
-            approved_by INTEGER,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (team_id) REFERENCES teams(id),
-            FOREIGN KEY (approved_by) REFERENCES users(id)
-        )
-    ''')
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        user_id INTEGER NOT NULL,
+        team_id INTEGER,
+        deadline TEXT,
+        priority TEXT,
+        status TEXT DEFAULT 'pending',
+        progress INTEGER DEFAULT 0,
+        visibility TEXT DEFAULT 'team',
+        checklist TEXT,
+        approved_by INTEGER,
+        needs_approval INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (team_id) REFERENCES teams(id),
+        FOREIGN KEY (approved_by) REFERENCES users(id)
+    )
+''')
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS task_files (
-            task_id INTEGER NOT NULL,
-            filename TEXT NOT NULL,
-            version INTEGER DEFAULT 1,
-            uploaded_by INTEGER,
-            PRIMARY KEY (task_id),
-            FOREIGN KEY (task_id) REFERENCES tasks(id),
-            FOREIGN KEY (uploaded_by) REFERENCES users(id)
-        )
+    CREATE TABLE IF NOT EXISTS task_files(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        filename TEXT NOT NULL,
+        version INTEGER DEFAULT 1,
+        uploaded_by INTEGER,
+        FOREIGN KEY (task_id) REFERENCES tasks(id),
+        FOREIGN KEY (uploaded_by) REFERENCES users(id)
+    )
     ''')
+
     conn.execute('''
         CREATE TABLE IF NOT EXISTS gamification (
             user_id INTEGER PRIMARY KEY,
@@ -209,17 +213,17 @@ def init_db():
         )
     ''')
     conn.execute('''
-        CREATE TABLE IF NOT EXISTS task_updates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            task_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            update_type TEXT NOT NULL,
-            notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (task_id) REFERENCES tasks(id),
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    ''')
+    CREATE TABLE IF NOT EXISTS task_updates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        update_type TEXT NOT NULL,
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id),
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+''')
     # Ensure 'created_at' column exists in tasks table
     try:
         conn.execute("SELECT created_at FROM tasks LIMIT 1")
@@ -231,6 +235,20 @@ def init_db():
     conn.close()
 
 init_db()
+
+def parse_skills(raw_skills):
+    if not raw_skills:
+        return []
+    try:
+        data = json.loads(raw_skills)
+        # Handle ['python,java'] case
+        if isinstance(data, list):
+            if len(data) == 1 and isinstance(data[0], str) and ',' in data[0]:
+                return [s.strip() for s in data[0].split(',')]
+            return [s.strip() for s in data]
+    except:
+        return [s.strip() for s in raw_skills.split(',')]
+
 
 def rate_limit(max_requests=100, window_seconds=3600):
     request_counts = defaultdict(list)
@@ -628,15 +646,18 @@ def inprogress_tasks():
                          tasks=task_dicts,
                          show_empty=not task_dicts)
 
+
 @app.route('/todo')
 @login_required
 def todo_tasks():
+    user_id = session['user_id']
     conn = get_db_connection()
     tasks = conn.execute('''
-        SELECT t.*, tf.filename, tf.version 
-        FROM tasks t 
-        LEFT JOIN task_files tf ON t.id = tf.task_id 
-        WHERE t.user_id = ? AND t.status = 'pending'
+        SELECT DISTINCT t.*, tf.filename, tf.version
+        FROM tasks t
+        LEFT JOIN task_files tf ON t.id = tf.task_id
+        LEFT JOIN team_members tm ON t.team_id = tm.team_id
+        WHERE (t.user_id = ? OR tm.user_id = ?) AND t.status = 'pending'
         ORDER BY 
             CASE priority 
                 WHEN 'High' THEN 1 
@@ -644,14 +665,15 @@ def todo_tasks():
                 WHEN 'Low' THEN 3 
             END,
             deadline ASC
-    ''', (session['user_id'],)).fetchall()
+    ''', (user_id, user_id)).fetchall()
     conn.close()
+
     task_dicts = [dict(task) for task in tasks]
     for task in task_dicts:
         task['checklist'] = json.loads(task['checklist'] or '{}')
-    return render_template('todo.html', 
-                         tasks=task_dicts,
-                         current_time=datetime.now().strftime('%Y-%m-%d'))
+
+    return render_template('todo.html', tasks=task_dicts, current_time=datetime.now().strftime('%Y-%m-%d'))
+
 
 @app.route('/completedo')
 @login_required
@@ -857,25 +879,42 @@ def teams():
 
     # Get the team the user is in
     team = conn.execute(
-        'SELECT teams.* FROM team_members JOIN teams ON team_members.team_id = teams.id WHERE team_members.user_id = ?',
+        '''
+        SELECT teams.* 
+        FROM team_members 
+        JOIN teams ON team_members.team_id = teams.id 
+        WHERE team_members.user_id = ?
+        ''',
         (user_id,)
     ).fetchone()
 
     # Get manager name
-    manager_name = conn.execute(
-        'SELECT username FROM users WHERE id = (SELECT created_by FROM teams WHERE id = ?)',
-        (team['id'],) if team else (None,)
-    ).fetchone()
-    manager_name = manager_name['username'] if manager_name else 'Unknown'
+    manager_name = 'Unknown'
+    if team:
+        manager = conn.execute(
+            'SELECT username FROM users WHERE id = (SELECT created_by FROM teams WHERE id = ?)',
+            (team['id'],)
+        ).fetchone()
+        manager_name = manager['username'] if manager else 'Unknown'
 
     # Get current user's skills
-    skills_row = conn.execute('SELECT skills FROM users WHERE id = ?', (user_id,)).fetchone()
+    skills_row = conn.execute(
+        'SELECT skills FROM users WHERE id = ?', 
+        (user_id,)
+    ).fetchone()
+    
     raw_skills = skills_row['skills'] if skills_row and skills_row['skills'] else ''
-    current_user_skills = [s.strip() for s in raw_skills.split(',') if s.strip()]
+    
+    try:
+        current_user_skills = json.loads(raw_skills)
+        if not isinstance(current_user_skills, list):
+            current_user_skills = [str(current_user_skills)]
+    except:
+        current_user_skills = [s.strip() for s in raw_skills.split(',') if s.strip()]
+    
     print(">>> Raw skills from DB:", repr(raw_skills))
 
     members_with_tasks = []
-
     if team:
         team_id = team['id']
         members = conn.execute('''
@@ -887,6 +926,7 @@ def teams():
         ''', (team_id,)).fetchall()
 
         for member in members:
+            # Get tasks for each member
             tasks = conn.execute('''
                 SELECT t.*, tf.filename, tf.version 
                 FROM tasks t 
@@ -902,24 +942,27 @@ def teams():
             ''', (member['id'], team_id)).fetchall()
 
             task_dicts = [dict(task) for task in tasks]
+
             for task in task_dicts:
                 task['checklist'] = json.loads(task['checklist'] or '{}')
                 comments = conn.execute(
-                    'SELECT tc.*, u.username FROM task_comments tc JOIN users u ON tc.user_id = u.id WHERE tc.task_id = ?',
+                    '''
+                    SELECT tc.*, u.username 
+                    FROM task_comments tc 
+                    JOIN users u ON tc.user_id = u.id 
+                    WHERE tc.task_id = ?
+                    ''',
                     (task['id'],)
                 ).fetchall()
                 task['comments'] = [dict(comment) for comment in comments]
 
-            # Handle member skills as comma-separated string
+            # Parse skills
             try:
                 member_skills = json.loads(member['skills']) if member['skills'] else []
                 if not isinstance(member_skills, list):
                     member_skills = [str(member_skills)]
             except json.JSONDecodeError:
-                    # Fallback if it's plain string like "java"
-                    member_skills = [s.strip() for s in member['skills'].split(',')] if member['skills'] else []
-
-
+                member_skills = [s.strip() for s in member['skills'].split(',')] if member['skills'] else []
 
             members_with_tasks.append({
                 'id': member['id'],
@@ -933,12 +976,14 @@ def teams():
         'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
         (user_id,)
     ).fetchall()
+
     unread_count = conn.execute(
         'SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0',
         (user_id,)
     ).fetchone()[0]
 
     conn.close()
+
     return render_template(
         'teams.html',
         team=team,
@@ -947,7 +992,7 @@ def teams():
         unread_count=unread_count,
         current_user_is_manager=current_user_is_manager(),
         manager_name=manager_name,
-        current_user_skills=current_user_skills,member=member
+        current_user_skills=current_user_skills
     )
 
 
@@ -1312,6 +1357,37 @@ def leaderboard():
     """).fetchall()
     conn.close()
     return render_template("leaderboard.html", leaderboard=leaderboard)
+import json, ast, re
+
+def clean_nested_skills(data):
+    # Flatten outer list if it's like: ['some string']
+    if isinstance(data, list) and len(data) == 1:
+        data = data[0]
+
+    # Try decoding it repeatedly
+    for _ in range(10):
+        if isinstance(data, str):
+            try:
+                # Try JSON first
+                data = json.loads(data)
+            except (json.JSONDecodeError, TypeError):
+                try:
+                    # Try literal_eval next
+                    data = ast.literal_eval(data)
+                except (ValueError, SyntaxError):
+                    break
+        # If it becomes a list with a string inside, unwrap one more level
+        if isinstance(data, list) and len(data) == 1 and isinstance(data[0], str):
+            data = data[0]
+        else:
+            break
+
+    # Final cleanup: ensure list of strings
+    if isinstance(data, str):
+        data = [data]
+
+    return [str(item).strip() for item in data if str(item).strip()]
+
 @app.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
@@ -1320,8 +1396,12 @@ def profile():
     print(">>> /profile route called")
 
     if request.method == "POST":
-        skills = request.form.get("skills", "")
-        conn.execute("UPDATE users SET skills = ? WHERE id = ?", (skills, user_id))
+        
+        import json
+        skills = request.form.getlist("skills")  # for multiple inputs
+        conn.execute("UPDATE users SET skills = ? WHERE id = ?", (json.dumps(skills), user_id))
+
+      
         conn.commit()
         flash("Skills updated successfully", "success")
 
@@ -1329,8 +1409,9 @@ def profile():
     badges = conn.execute("SELECT badge_name FROM badges WHERE user_id = ?", (user_id,)).fetchall()
     conn.close()
 
-    # Ensure `skills` is always a list
-    skills_list = [s.strip() for s in (row["skills"] or "").split(",") if s.strip()]
+    # ✅ Use clean_nested_skills() to sanitize the messy skills data
+    skills_list = parse_skills(row["skills"])
+
 
     user = {
         "username": row["username"],
@@ -1339,6 +1420,7 @@ def profile():
     }
 
     return render_template("profile.html", user=user, badges=[b["badge_name"] for b in badges])
+
 
 @app.route('/schedule')
 @login_required
@@ -1366,23 +1448,33 @@ def schedule():
 def search_tasks():
     user_id = session['user_id']
     query = request.args.get('q', '').strip()
+    
     if not query or len(query) < 2:
         return jsonify({"tasks": []})
-    tasks = conn.execute('''
-    SELECT * FROM tasks
-    WHERE user_id = ?
-      AND (title LIKE ? OR description LIKE ?)
-      AND status != 'deleted'
-    ORDER BY 
-      CASE priority
-        WHEN 'High' THEN 1
-        WHEN 'Medium' THEN 2
-        WHEN 'Low' THEN 3
-        ELSE 4
-      END,
-      deadline''', (user_id, query, query)).fetchall()
-    conn.close()
-    tasks = [{
+
+    like_query = f"%{query}%"
+
+    conn = get_db_connection()  # Make sure this function exists and returns a valid DB connection
+
+    try:
+        tasks = conn.execute('''
+            SELECT * FROM tasks
+            WHERE user_id = ?
+              AND (title LIKE ? OR description LIKE ?)
+              AND status != 'deleted'
+            ORDER BY 
+              CASE priority
+                WHEN 'High' THEN 1
+                WHEN 'Medium' THEN 2
+                WHEN 'Low' THEN 3
+                ELSE 4
+              END,
+              deadline
+        ''', (user_id, like_query, like_query)).fetchall()
+    finally:
+        conn.close()
+
+    task_list = [{
         'id': task['id'],
         'title': task['title'],
         'description': task['description'],
@@ -1391,8 +1483,9 @@ def search_tasks():
         'status': task['status'],
         'progress': task['progress'],
         'checklist': json.loads(task['checklist'] or '{}')
-    } for task in results]
-    return jsonify({"tasks": tasks})
+    } for task in tasks]
+
+    return jsonify({"tasks": task_list})
 
 @app.route('/add', methods=['POST'])
 @login_required
@@ -1412,29 +1505,68 @@ def add_task():
     task_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
     conn.commit()
     conn.close()
-    flash('Task added successfully', 'success')
+   
     update_gamification(user_id, points=5)
     return redirect(url_for('index'))
 
-@app.route('/status/<int:task_id>/<string:new_status>', methods=['POST'])
+@app.route('/status/<int:task_id>/<string:new_status>', methods=['POST', 'GET'])
 @login_required
 def update_status(task_id, new_status):
     user_id = session['user_id']
+    logger.debug(f"Request: task_id={task_id}, user_id={user_id}, new_status={new_status}, method={request.method}")
+    
+    # Warn if GET is used
+    if request.method == 'GET':
+        logger.warning(f"GET request for /status/{task_id}/{new_status}. POST is recommended.")
+    
+    # Force 'inprogress' for certain statuses
+    if new_status in ['todo', 'pending']:
+        new_status = 'inprogress'
+        logger.debug(f"Overriding new_status to 'inprogress' for task_id={task_id}")
+    
     conn = get_db_connection()
-    task = conn.execute("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id)).fetchone()
-    if not task:
+    try:
+        # Fetch task
+        task = conn.execute("SELECT * FROM tasks WHERE id = ? AND user_id = ?", (task_id, user_id)).fetchone()
+        if not task:
+            logger.error(f"Task not found: id={task_id}, user_id={user_id}")
+            return jsonify({"success": False, "message": "Task not found"}), 404
+        
+        # Check approval for inprogress
+        if new_status == 'inprogress' and task['needs_approval'] and not task['approved_by']:
+            logger.warning(f"Task {task_id} requires approval but not approved")
+            return jsonify({"success": False, "message": "Approval required"}), 403
+        
+        # Update task status and progress
+        logger.debug(f"Updating task {task_id} to status={new_status}, progress=0")
+        conn.execute("UPDATE tasks SET status = ?, progress = ? WHERE id = ? AND user_id = ?",
+                    (new_status, 0 if new_status == 'inprogress' else task['progress'], task_id, user_id))
+        conn.commit()
+        logger.info(f"Task {task_id} status updated to {new_status}, progress={0 if new_status == 'inprogress' else task['progress']} for user {user_id}")
+        
+        # Verify update
+        updated_task = conn.execute("SELECT status, progress FROM tasks WHERE id = ? AND user_id = ?",
+                                   (task_id, user_id)).fetchone()
+        if updated_task and updated_task['status'] == new_status and (new_status != 'inprogress' or updated_task['progress'] == 0):
+            logger.debug(f"Verified: Task {task_id} status={new_status}, progress={updated_task['progress']}")
+        else:
+            logger.error(f"Verification failed: Task {task_id} status={updated_task['status'] if updated_task else 'None'}, progress={updated_task['progress'] if updated_task else 'None'}")
+            return jsonify({"success": False, "message": "Failed to verify status or progress update"}), 500
+        
+        # Handle responses
+        if new_status == 'completed':
+            update_gamification(user_id, points=50, badge='Task Slayer')
+            return jsonify({"success": True, "message": f"Task updated to {new_status}"})
+        elif new_status == 'inprogress':
+            logger.debug(f"Redirecting to /team for task_id={task_id}")
+            return redirect(url_for('inprogress_tasks'))
+        return jsonify({"success": True, "message": f"Task updated to {new_status}"})
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Database error updating task {task_id}: {str(e)}")
+        return jsonify({"success": False, "message": f"Database error: {str(e)}"}), 500
+    finally:
         conn.close()
-        return jsonify({"success": False, "message": "Task not found"}), 404
-    if new_status == 'inprogress' and task['needs_approval'] and not task['approved_by']:
-        conn.close()
-        return jsonify({"success": False, "message": "Approval required"}), 403
-    conn.execute("UPDATE tasks SET status = ? WHERE id = ? AND user_id = ?", 
-                (new_status, task_id, user_id))
-    conn.commit()
-    conn.close()
-    if new_status == 'completed':
-        update_gamification(user_id, points=50, badge='Task Slayer')
-    return jsonify({"success": True, "message": f"Task status updated to {new_status}"})
 
 @app.route('/update_task_priority/<int:task_id>', methods=['POST'])
 @login_required
@@ -1486,7 +1618,7 @@ def quick_add_task():
                  (session['user_id'], title))
     conn.commit()
     conn.close()
-    flash('Task added successfully', 'success')
+    
     update_gamification(session['user_id'], points=5)
     return redirect(url_for('todo_tasks'))
 
@@ -1524,9 +1656,9 @@ def update_task(task_id):
                 "id": task_id,
                 "title": new_title,
                 "description": new_description,
-                "deadline": deadline_new,
+                "deadline": new_deadline,
                 "priority": new_priority,
-                "visibility": visibility_new
+                "visibility": new_visibility
             }
         })
 

@@ -450,13 +450,14 @@
                             <div>
                                 <label for="assign_to" class="block text-sm font-medium mb-1">Assign To</label>
                                 <select name="assign_to" id="assign_to" class="select" required>
-                                  <option value="{{ member.id }}">
-    {{ member.username }}
-    {% if member.skills %}
-        - {{ member.skills if member.skills is string else member.skills | join(', ') | truncate(30) }}
-    {% endif %}
-</option>
-
+                                    {% for member in members_with_tasks %}
+                                        <option value="{{ member.id }}">
+                                            {{ member.username }}
+                                            {% if member.skills %}
+                                                - {{ member.skills | join(', ') | truncate(30) }}
+                                            {% endif %}
+                                        </option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             
@@ -806,6 +807,7 @@
             <i class="fas fa-plus text-xl"></i>
         </div>
     {% endif %}
+</div>
 
     <script>
         // Auto-refresh page every 2 seconds (from previous request)

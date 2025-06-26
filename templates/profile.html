@@ -174,21 +174,26 @@
 
                 <!-- Skills -->
                 <div>
-                    <h2 class="text-lg font-medium mb-2 flex items-center">
-                        <i class="fas fa-code-branch mr-2 text-[var(--primary-blue)]"></i>
-                        Skills
-                    </h2>
-                    {% if user.skills %}
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            {% for skill in user.skills.split(',') %}
-                                <span class="skill-tag">{{ skill.strip() }}</span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No skills added yet</p>
-                    {% endif %}
+    <h2 class="text-lg font-medium mb-2 flex items-center">
+        <i class="fas fa-code-branch mr-2 text-[var(--primary-blue)]"></i>
+        Skills
+    </h2>
+    {% if user.skills %}
+        <div class="mb-4">
+            <ul class="list-disc pl-5 space-y-1">
+                {% for skill in user.skills %}
+                    <li>{{ skill }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p class="text-muted">No skills added yet</p>
+    {% endif %}
+</div>
+
                     <form action="{{ url_for('profile') }}" method="POST" class="flex gap-2">
-                        <input type="text" name="skills" class="input flex-grow" placeholder="Enter skills (comma-separated, e.g., Python, JavaScript)" value="{{ user.skills or '' }}">
+                        <input type="text" name="skills" class="input flex-grow" placeholder="Enter skills (comma-separated, e.g., Python, JavaScript)" value="{{ ', '.join(user.skills) if user.skills else '' }}"
+">
                         <button type="submit" class="btn flex items-center">
                             <i class="fas fa-save mr-2"></i> Update Skills
                         </button>
