@@ -121,5 +121,5 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 - **Deleted tasks View**: ![Dashboard](assets/deleted_tasks.png)
 - **Todo View**: ![Dashboard](assets/todo.png)
 - **Teams**: ![Team Management](assets/teams.png)
-- **Members**: ![Dashboard](assets/member_team.png)
+- **Members**: ![Dashboard](assets/member_team_ui.png)
 - 
