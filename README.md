@@ -52,8 +52,8 @@ Follow the steps below to run Taskly Pro locally.
 
 ### 1. Clone the Repository
 
-git clone https://github.com/yourusername/taskly-pro.git
-cd taskly-pro
+git clone https://github.com/varshitha102/AI_Task_Manager_Taskly_Pro.git
+cd 
 
 ### 2. Create a Virtual Environment
 
